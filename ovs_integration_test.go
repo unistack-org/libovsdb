@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const PROTOCOL = "tcp"
+
 func TestConnect(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
@@ -23,14 +25,14 @@ func TestConnect(t *testing.T) {
 
 	go func() {
 		// Use Convenience params. Ignore failure even if any
-		_, err := Connect("", 0)
+		_, err := Connect("", 0, PROTOCOL)
 		if err != nil {
 			log.Println("Couldnt establish OVSDB connection with Defult params. No big deal")
 		}
 	}()
 
 	go func() {
-		ovs, err := Connect(os.Getenv("DOCKER_IP"), int(6640))
+		ovs, err := Connect(os.Getenv("DOCKER_IP"), int(6640), PROTOCOL)
 		if err != nil {
 			connected <- false
 		} else {
@@ -54,7 +56,7 @@ func TestListDbs(t *testing.T) {
 		t.Skip()
 	}
 
-	ovs, err := Connect(os.Getenv("DOCKER_IP"), int(6640))
+	ovs, err := Connect(os.Getenv("DOCKER_IP"), int(6640), PROTOCOL)
 	if err != nil {
 		panic(err)
 	}
@@ -77,7 +79,7 @@ func TestGetSchemas(t *testing.T) {
 		t.Skip()
 	}
 
-	ovs, err := Connect(os.Getenv("DOCKER_IP"), int(6640))
+	ovs, err := Connect(os.Getenv("DOCKER_IP"), int(6640), PROTOCOL)
 	if err != nil {
 		panic(err)
 	}
@@ -105,7 +107,7 @@ func TestInsertTransact(t *testing.T) {
 		t.Skip()
 	}
 
-	ovs, err := Connect(os.Getenv("DOCKER_IP"), int(6640))
+	ovs, err := Connect(os.Getenv("DOCKER_IP"), int(6640), PROTOCOL)
 	if err != nil {
 		log.Fatal("Failed to Connect. error:", err)
 		panic(err)
@@ -236,7 +238,7 @@ func TestMonitor(t *testing.T) {
 		t.Skip()
 	}
 
-	ovs, err := Connect(os.Getenv("DOCKER_IP"), int(6640))
+	ovs, err := Connect(os.Getenv("DOCKER_IP"), int(6640), PROTOCOL)
 	if err != nil {
 		log.Fatal("Failed to Connect. error:", err)
 		panic(err)
@@ -255,7 +257,7 @@ func TestNotify(t *testing.T) {
 		t.Skip()
 	}
 
-	ovs, err := Connect(os.Getenv("DOCKER_IP"), int(6640))
+	ovs, err := Connect(os.Getenv("DOCKER_IP"), int(6640), PROTOCOL)
 	if err != nil {
 		log.Fatal("Failed to Connect. error:", err)
 		panic(err)
@@ -286,7 +288,7 @@ func TestRemoveNotify(t *testing.T) {
 		t.Skip()
 	}
 
-	ovs, err := Connect(os.Getenv("DOCKER_IP"), int(6640))
+	ovs, err := Connect(os.Getenv("DOCKER_IP"), int(6640), PROTOCOL)
 	if err != nil {
 		log.Fatal("Failed to Connect. error:", err)
 		panic(err)
@@ -330,7 +332,7 @@ func TestDBSchemaValidation(t *testing.T) {
 		t.Skip()
 	}
 
-	ovs, e := Connect(os.Getenv("DOCKER_IP"), int(6640))
+	ovs, e := Connect(os.Getenv("DOCKER_IP"), int(6640), PROTOCOL)
 	if e != nil {
 		log.Fatal("Failed to Connect. error:", e)
 		panic(e)
@@ -359,7 +361,7 @@ func TestTableSchemaValidation(t *testing.T) {
 		t.Skip()
 	}
 
-	ovs, e := Connect(os.Getenv("DOCKER_IP"), int(6640))
+	ovs, e := Connect(os.Getenv("DOCKER_IP"), int(6640), PROTOCOL)
 	if e != nil {
 		log.Fatal("Failed to Connect. error:", e)
 		panic(e)
@@ -388,7 +390,7 @@ func TestColumnSchemaInRowValidation(t *testing.T) {
 		t.Skip()
 	}
 
-	ovs, e := Connect(os.Getenv("DOCKER_IP"), int(6640))
+	ovs, e := Connect(os.Getenv("DOCKER_IP"), int(6640), PROTOCOL)
 	if e != nil {
 		log.Fatal("Failed to Connect. error:", e)
 		panic(e)
@@ -419,7 +421,7 @@ func TestColumnSchemaInMultipleRowsValidation(t *testing.T) {
 		t.Skip()
 	}
 
-	ovs, e := Connect(os.Getenv("DOCKER_IP"), int(6640))
+	ovs, e := Connect(os.Getenv("DOCKER_IP"), int(6640), PROTOCOL)
 	if e != nil {
 		log.Fatal("Failed to Connect. error:", e)
 		panic(e)
@@ -455,7 +457,7 @@ func TestColumnSchemaValidation(t *testing.T) {
 		t.Skip()
 	}
 
-	ovs, e := Connect(os.Getenv("DOCKER_IP"), int(6640))
+	ovs, e := Connect(os.Getenv("DOCKER_IP"), int(6640), PROTOCOL)
 	if e != nil {
 		log.Fatal("Failed to Connect. error:", e)
 		panic(e)

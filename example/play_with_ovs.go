@@ -14,6 +14,7 @@ import (
 var quit chan bool
 var update chan *libovsdb.TableUpdates
 var cache map[string]map[string]libovsdb.Row
+const PROTOCOL  = "tcp"
 
 func play(ovs *libovsdb.OvsdbClient) {
 	go processInput(ovs)
@@ -129,7 +130,7 @@ func main() {
 	cache = make(map[string]map[string]libovsdb.Row)
 
 	// By default libovsdb connects to 127.0.0.0:6400.
-	ovs, err := libovsdb.Connect("", 0)
+	ovs, err := libovsdb.Connect("", 0, PROTOCOL)
 
 	// If you prefer to connect to OVS in a specific location :
 	// ovs, err := libovsdb.Connect("192.168.56.101", 6640)
