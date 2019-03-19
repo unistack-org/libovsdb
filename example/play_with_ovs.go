@@ -5,7 +5,7 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/socketplane/libovsdb"
+	"github.com/unistack-org/libovsdb"
 )
 
 // Silly game that detects creation of Bridge named "stop" and exits
@@ -14,7 +14,8 @@ import (
 var quit chan bool
 var update chan *libovsdb.TableUpdates
 var cache map[string]map[string]libovsdb.Row
-const PROTOCOL  = "tcp"
+
+const PROTOCOL = "tcp"
 
 func play(ovs *libovsdb.OvsdbClient) {
 	go processInput(ovs)
