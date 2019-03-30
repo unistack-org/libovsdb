@@ -58,15 +58,33 @@ const (
 	SKIP_TLS_VERIFY = true
 )
 
-// ConnectUsingTCP creates an OVSDB connection using TCP and returns and OvsdbClient
-func ConnectUsingTCP(protocol string, target string) (*OvsdbClient, error) {
-	conn, err := net.Dial(protocol, target)
+func Dial(network, address string, config *tls.Config) (*OvsdbClient, error) {
+	var c net.Conn
+	var err error
+
+	switch network {
+	case "tcp", "tcp6":
+		if config != nil {
+			c, err = tls.Dial(network, address, config)
+		} else {
+			c, err = net.Dial(network, address)
+		}
+	case "unix":
+		c, err = net.Dial(network, address)
+	default:
+		return nil, fmt.Errorf("unknown network protocol %s", network)
+	}
 
 	if err != nil {
 		return nil, err
 	}
 
+	return newRPC2Client(c)
+}
+
+func newRPC2Client(conn net.Conn) (*OvsdbClient, error) {
 	c := rpc2.NewClientWithCodec(jsonrpc.NewJSONCodec(conn))
+	c.SetBlocking(true)
 	c.Handle("echo", echo)
 	c.Handle("update", update)
 	go c.Run()
@@ -87,6 +105,15 @@ func ConnectUsingTCP(protocol string, target string) (*OvsdbClient, error) {
 		}
 	}
 	return ovs, nil
+}
+
+// ConnectUsingTCP creates an OVSDB connection using TCP and returns and OvsdbClient
+func ConnectUsingTCP(protocol string, target string) (*OvsdbClient, error) {
+	conn, err := net.Dial(protocol, target)
+	if err != nil {
+		return nil, err
+	}
+	return newRPC2Client(conn)
 }
 
 // ConnectUsingSSL creates an OVSDB connection using SSL and returns and OvsdbClient
@@ -118,29 +145,7 @@ func ConnectUsingSSL(protocol string, target string) (*OvsdbClient, error) {
 		log.Fatalf("client: dial: %s", err)
 		return nil, err
 	}
-	log.Println("client: connected to: ", conn.RemoteAddr())
-	c := rpc2.NewClientWithCodec(jsonrpc.NewJSONCodec(conn))
-	c.SetBlocking(true)
-	c.Handle("echo", echo)
-	c.Handle("update", update)
-	go c.Run()
-	go handleDisconnectNotification(c)
-
-	ovs := newOvsdbClient(c)
-
-	// Process Async Notifications
-	dbs, err := ovs.ListDbs()
-	if err == nil {
-		for _, db := range dbs {
-			schema, err := ovs.GetSchema(db)
-			if err == nil {
-				ovs.Schema[db] = *schema
-			} else {
-				return nil, err
-			}
-		}
-	}
-	return ovs, nil
+	return newRPC2Client(conn)
 }
 
 // Connect creates an OVSDB connection and returns and OvsdbClient
@@ -166,10 +171,6 @@ func Connect(ipAddr string, port int, protocol string) (*OvsdbClient, error) {
 
 // ConnectWithUnixSocket makes a OVSDB Connection via a Unix Socket
 func ConnectWithUnixSocket(socketFile string) (*OvsdbClient, error) {
-
-	if _, err := os.Stat(socketFile); os.IsNotExist(err) {
-		return nil, errors.New("Invalid socket file")
-	}
 
 	return ConnectUsingTCP(UNIX, socketFile)
 }
