@@ -116,13 +116,24 @@ func TestUpdate(t *testing.T) {
 		t.Error("Expected: error for a dummy request")
 	}
 
-	// Valid dummy update should pass
-	validUpdate := make(map[string]interface{})
-	validRowUpdate := make(map[string]RowUpdate)
-	validRowUpdate["uuid"] = RowUpdate{}
-	validUpdate["table"] = validRowUpdate
+	// Valid dummy update should pass https://tools.ietf.org/html/rfc7047#section-4.1.6
+	updates := make(map[string]interface{})
+	updates["Test_Table"] = make(map[string]interface{})
 
-	err = update(nil, []interface{}{"hello", validUpdate}, &reply)
+	tableUpdate := make(map[string]interface{})
+	tableUpdate["Test_UUID"] = make(map[string]interface{})
+
+	newUpdate := make(map[string]interface{})
+	newUpdate["new"] = make(map[string]interface{})
+
+	rowUpdate := make(map[string]interface{})
+	rowUpdate["name"] = "test_name"
+
+	newUpdate["new"] = rowUpdate
+	tableUpdate["Test_UUID"] = newUpdate
+	updates["Test_Table"] = tableUpdate
+
+	err = update(nil, []interface{}{"hello", updates}, &reply)
 	if err != nil {
 		t.Error(err)
 	}

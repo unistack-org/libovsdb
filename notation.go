@@ -79,11 +79,10 @@ type TableUpdate struct {
 	Rows map[string]RowUpdate `json:"rows,overflow"`
 }
 
-// RowUpdate represents a row update according to RFC7047
 type RowUpdate struct {
-	UUID UUID `json:"-,omitempty"`
-	New  Row  `json:"new,omitempty"`
-	Old  Row  `json:"old,omitempty"`
+	UUID string
+	New  interface{}
+	Old  interface{}
 }
 
 // OvsdbError is an OVS Error Condition

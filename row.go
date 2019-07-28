@@ -1,6 +1,8 @@
 package libovsdb
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 // Row is a table Row according to RFC7047
 type Row struct {

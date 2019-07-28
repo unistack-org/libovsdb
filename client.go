@@ -2,7 +2,6 @@ package libovsdb
 
 import (
 	"crypto/tls"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -49,12 +48,12 @@ var (
 const (
 	defaultTCPAddress  = "127.0.0.1:6640"
 	defaultUnixAddress = "/var/run/openvswitch/ovnnb_db.sock"
-	SSL             = "ssl"
-	TCP             = "tcp"
-	UNIX            = "unix"
+	SSL                = "ssl"
+	TCP                = "tcp"
+	UNIX               = "unix"
 )
 
-// Connect to ovn, using endpoint in format ovsdb Connection Methods
+// Connect to ovsdb, using endpoint in format ovsdb Connection Methods
 // If address is empty, use default address for specified protocol
 func Connect(endpoints string, tlsConfig *tls.Config) (*OvsdbClient, error) {
 	var c net.Conn
@@ -182,25 +181,58 @@ func echo(client *rpc2.Client, args []interface{}, reply *[]interface{}) error {
 	return nil
 }
 
+func rawToRowUpdates(raw map[string]interface{}) (map[string]map[string]RowUpdate, error) {
+	rowUpdates := make(map[string]map[string]RowUpdate)
+
+	for tbl, opt := range raw {
+		opts, ok := opt.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("invalid row update: %v", opt)
+			// invalid table update
+			continue
+		}
+		rowUpdates[tbl] = make(map[string]RowUpdate)
+		for uuid, val := range opts {
+			vals, ok := val.(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("invalid row update: %v", val)
+			}
+			rowUpdate := RowUpdate{UUID: uuid}
+			for k, vv := range vals {
+				v, ok := vv.(map[string]interface{})
+				if !ok {
+					return nil, fmt.Errorf("invalid row update: %v", vv)
+				}
+				switch k {
+				case "old":
+					rowUpdate.Old = v
+				case "new":
+					rowUpdate.New = v
+				}
+			}
+			rowUpdates[tbl][uuid] = rowUpdate
+		}
+	}
+	return rowUpdates, nil
+}
+
 // RFC 7047 : Update Notification Section 4.1.6
 // Processing "params": [<json-value>, <table-updates>]
 func update(client *rpc2.Client, params []interface{}, reply *interface{}) error {
+	var err error
+
 	if len(params) < 2 {
 		return errors.New("Invalid Update message")
 	}
-	// Ignore params[0] as we dont use the <json-value> currently for comparison
 
+	// Ignore params[0] as we dont use the <json-value> currently for comparison
 	raw, ok := params[1].(map[string]interface{})
 	if !ok {
 		return errors.New("Invalid Update message")
 	}
-	var rowUpdates map[string]map[string]RowUpdate
 
-	b, err := json.Marshal(raw)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(b, &rowUpdates)
+	// parse <table-updates> https://tools.ietf.org/html/rfc7047#section-4.1.6
+	rowUpdates, err := rawToRowUpdates(raw)
 	if err != nil {
 		return err
 	}
@@ -314,13 +346,13 @@ func (ovs OvsdbClient) Monitor(database string, jsonContext interface{}, request
 
 	args := NewMonitorArgs(database, jsonContext, requests)
 
-	// This totally sucks. Refer to golang JSON issue #6213
-	var response map[string]map[string]RowUpdate
+	var response map[string]interface{}
 	err := ovs.rpcClient.Call("monitor", args, &response)
-	reply = getTableUpdatesFromRawUnmarshal(response)
+	rowUpdates, err := rawToRowUpdates(response)
 	if err != nil {
 		return nil, err
 	}
+	reply = getTableUpdatesFromRawUnmarshal(rowUpdates)
 	return &reply, err
 }
 
